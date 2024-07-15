@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/seaskythe/rayscape/color"
@@ -9,19 +10,28 @@ import (
 	"github.com/seaskythe/rayscape/vector"
 )
 
-func hit_sphere(center vector.Point3, radius float64, ray ray.Ray) bool {
+func hit_sphere(center vector.Point3, radius float64, ray ray.Ray) float64 {
 	oc := vector.Subtract(center, ray.Origin)
 	a := vector.Dot(ray.Direction, ray.Direction)
-	b := -2.0 * vector.Dot(ray.Direction, oc)
+    b := -2.0 * vector.Dot(ray.Direction, oc)
 	c := vector.Dot(oc, oc) - radius*radius
-
 	discriminant := b*b - 4*a*c
 
-	return discriminant >= 0
+
+	if discriminant < 0 {
+		return -1.0
+	} else {
+        root := math.Sqrt(discriminant)
+		return ((-b - root) / (2 * a))
+	}
 }
+
 func ray_color(ray ray.Ray) color.Color3 {
-	if (hit_sphere(vector.Point3{X: 0, Y: 0, Z: -1}, 0.5, ray)) {
-		return color.Color3{X: 1, Y: 0, Z: 0}
+	t := hit_sphere(vector.Point3{X: 0, Y: 0, Z: -1}, 0.5, ray)
+	if t > 0 {
+		sub := vector.Subtract(ray.At(t), vector.Point3{X: 0, Y: 0, Z: -1})
+		N := vector.UnitVector(sub)
+		return vector.Scale(color.Color3{X: N.X + 1, Y: N.Y + 1, Z: N.Z + 1}, 0.5)
 	}
 
 	unit_direction := vector.UnitVector(ray.Direction)
@@ -47,7 +57,7 @@ func main() {
 	// Camera
 	var focal_length float64 = 1.0
 	var viewport_height float64 = 2.0
-	var viewport_width float64 = viewport_height * (float64(image_width)/float64(image_height))
+	var viewport_width float64 = viewport_height * float64(float64(image_width)/float64(image_height))
 	var camera_center vector.Point3 = vector.Point3{X: 0, Y: 0, Z: 0}
 
 	// Calculate the vectors across the horizontal and down the vertical viewport edges
@@ -67,9 +77,9 @@ func main() {
 
 	var pixel_delta_u_plus_v = vector.Add(pixel_delta_u, pixel_delta_v)
 	var pixel00_loc = vector.Add(
-        viewport_upper_left,
-        vector.Scale(pixel_delta_u_plus_v, 0.5),
-    )
+		viewport_upper_left,
+		vector.Scale(pixel_delta_u_plus_v, 0.5),
+	)
 
 	file := CreatePPMImage(image_width, image_height)
 	defer file.Close()
@@ -84,8 +94,7 @@ func main() {
 			var pixel_center = vector.Add(pixel00_loc, pixel_deltas)
 			var ray_direction = vector.Subtract(pixel_center, camera_center)
 
-			var r ray.Ray = ray.Ray{Origin: pixel_center, Direction: ray_direction}
-
+			var r ray.Ray = ray.Ray{Origin: camera_center, Direction: ray_direction}
 			pixel_color := ray_color(r)
 			color.WriteColor(file, pixel_color)
 		}
