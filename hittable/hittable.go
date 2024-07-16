@@ -1,6 +1,7 @@
 package hittable
 
 import (
+	"github.com/seaskythe/rayscape/interval"
 	"github.com/seaskythe/rayscape/ray"
 	"github.com/seaskythe/rayscape/vector"
 )
@@ -13,7 +14,7 @@ type HitRecord struct {
 }
 
 type Hittable interface {
-	Hit(r ray.Ray, t_min float64, t_max float64, rec *HitRecord) bool
+	Hit(r ray.Ray, ray_t interval.Interval, rec *HitRecord) bool
 }
 
 func (h *HitRecord) SetFaceNormal(r ray.Ray, outward_normal vector.Vec3) {

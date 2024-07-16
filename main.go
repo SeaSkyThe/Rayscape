@@ -6,17 +6,16 @@ import (
 
 	"github.com/seaskythe/rayscape/color"
 	"github.com/seaskythe/rayscape/hittable"
+	"github.com/seaskythe/rayscape/interval"
 	"github.com/seaskythe/rayscape/ray"
 	"github.com/seaskythe/rayscape/vector"
 )
 
-
 func ray_color(ray ray.Ray, world hittable.Hittable) color.Color3 {
-    var rec hittable.HitRecord
-    if (world.Hit(ray, 0, infinity, &rec)){
-        fmt.Println(rec)
-        return vector.Scale(vector.Add(rec.Normal, color.Color3{X: 1, Y: 1, Z: 1}), 0.5)
-    }
+	var rec hittable.HitRecord
+	if (world.Hit(ray, interval.Interval{Min: 0, Max: infinity}, &rec)) {
+		return vector.Scale(vector.Add(rec.Normal, color.Color3{X: 1, Y: 1, Z: 1}), 0.5)
+	}
 
 	unit_direction := vector.UnitVector(ray.Direction)
 	a := 0.5 * (unit_direction.Y + 1.0)
@@ -38,10 +37,10 @@ func main() {
 		image_height = 1
 	}
 
-    // World
-    var world hittable.HittableList
-    world.Add(hittable.Sphere{Center: vector.Point3{X: 0, Y: 0, Z: -1}, Radius: 0.5})
-    world.Add(hittable.Sphere{Center: vector.Point3{X: 0, Y: -100.5, Z: -1}, Radius: 100})
+	// World
+	var world hittable.HittableList
+	world.Add(hittable.Sphere{Center: vector.Point3{X: 0, Y: 0, Z: -1}, Radius: 0.5})
+	world.Add(hittable.Sphere{Center: vector.Point3{X: 0, Y: -100.5, Z: -1}, Radius: 100})
 
 	// Camera
 	var focal_length float64 = 1.0
@@ -74,7 +73,7 @@ func main() {
 	defer file.Close()
 
 	for j := 0; j < image_height; j++ {
-		// fmt.Fprintf(os.Stderr, "\033[2K\rScanlines remaining: %d", image_height-j)
+		fmt.Fprintf(os.Stderr, "\033[2K\rScanlines remaining: %d", image_height-j)
 		os.Stderr.Sync()
 		for i := 0; i < image_width; i++ {
 			pixel_delta_u_i := vector.Scale(pixel_delta_u, float64(i))
@@ -82,11 +81,11 @@ func main() {
 			pixel_deltas := vector.Add(pixel_delta_u_i, pixel_delta_v_j)
 			var pixel_center = vector.Add(pixel00_loc, pixel_deltas)
 			var ray_direction = vector.Subtract(pixel_center, camera_center)
-            var r ray.Ray = ray.Ray{Origin: camera_center, Direction: ray_direction}
+			var r ray.Ray = ray.Ray{Origin: camera_center, Direction: ray_direction}
 
 			pixel_color := ray_color(r, world)
 			color.WriteColor(file, pixel_color)
 		}
 	}
-    fmt.Fprintln(os.Stderr, "\nDone!")
+	fmt.Fprintln(os.Stderr, "\nDone!")
 }

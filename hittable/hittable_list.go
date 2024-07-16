@@ -1,6 +1,7 @@
 package hittable
 
 import (
+	"github.com/seaskythe/rayscape/interval"
 	"github.com/seaskythe/rayscape/ray"
 )
 
@@ -17,19 +18,19 @@ func (h *HittableList) Add(obj Hittable) {
 	*h = append(*h, obj)
 }
 
-func (h HittableList) Hit(r ray.Ray, t_min float64, t_max float64, rec *HitRecord) bool {
-    var temp_rec HitRecord
-    var hit_anything bool = false
-    closest_so_far := t_max
+func (h HittableList) Hit(r ray.Ray, ray_t interval.Interval, rec *HitRecord) bool {
+	var temp_rec HitRecord
+	var hit_anything bool = false
+	closest_so_far := ray_t.Max
 
-    for _, obj := range h {
-        if obj.Hit(r, t_min, closest_so_far, &temp_rec) {
-            hit_anything = true
-            closest_so_far = temp_rec.T
-            *rec = temp_rec
-        }
-    }
+	for _, obj := range h {
+		if obj.Hit(r, interval.Interval{Min: ray_t.Min, Max: closest_so_far}, &temp_rec) {
+			hit_anything = true
+			closest_so_far = temp_rec.T
+			*rec = temp_rec
+		}
+	}
 
-    return hit_anything
+	return hit_anything
 
 }
