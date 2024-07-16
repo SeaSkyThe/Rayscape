@@ -13,13 +13,15 @@ import (
 )
 
 type Camera struct {
-	AspectRatio float64
-	ImageWidth  int
-	ImageHeight int
-	Center      vector.Point3
-	Pixel00Loc  vector.Point3
-	PixelDeltaU vector.Vec3
-	PixelDeltaV vector.Vec3
+	AspectRatio       float64
+	ImageWidth        int
+	ImageHeight       int
+	Center            vector.Point3
+	Pixel00Loc        vector.Point3
+	PixelDeltaU       vector.Vec3
+	PixelDeltaV       vector.Vec3
+	SamplesPerPixel   int
+	PixelSamplesScale float64
 }
 
 func (c *Camera) Render(world hittable.Hittable) {
@@ -32,15 +34,13 @@ func (c *Camera) Render(world hittable.Hittable) {
 		fmt.Fprintf(os.Stderr, "\033[2K\rScanlines remaining: %d", c.ImageHeight-j)
 		os.Stderr.Sync()
 		for i := 0; i < c.ImageWidth; i++ {
-			pixel_delta_u_i := vector.Scale(c.PixelDeltaU, float64(i))
-			pixel_delta_v_j := vector.Scale(c.PixelDeltaV, float64(j))
-			pixel_deltas := vector.Add(pixel_delta_u_i, pixel_delta_v_j)
-			var pixel_center = vector.Add(c.Pixel00Loc, pixel_deltas)
-			var ray_direction = vector.Subtract(pixel_center, c.Center)
-			var r ray.Ray = ray.Ray{Origin: c.Center, Direction: ray_direction}
+            pixel_color := color.Color3{X: 0, Y: 0, Z: 0}
 
-			pixel_color := c.RayColor(r, world)
-			color.WriteColor(file, pixel_color)
+			for sample := 0; sample < c.SamplesPerPixel; sample++ {
+				r := c.GetRay(i, j)
+				pixel_color = vector.Add(pixel_color, c.RayColor(r, world))
+			}
+			color.WriteColor(file, vector.Scale(pixel_color, c.PixelSamplesScale))
 		}
 	}
 	fmt.Fprintln(os.Stderr, "\nDone!")
@@ -53,12 +53,13 @@ func (c *Camera) Initialize() {
 	if c.ImageHeight < 1 {
 		c.ImageHeight = 1
 	}
+	c.PixelSamplesScale = 1.0 / float64(c.SamplesPerPixel)
 
 	// Camera
 	var focal_length float64 = 1.0
 	var viewport_height float64 = 2.0
 	var viewport_width float64 = viewport_height * float64(float64(c.ImageWidth)/float64(c.ImageHeight))
-	var camera_center vector.Point3 = vector.Point3{X: 0, Y: 0, Z: 0}
+	c.Center = vector.Point3{X: 0, Y: 0, Z: 0}
 
 	// Calculate the vectors across the horizontal and down the vertical viewport edges
 	var viewport_u vector.Vec3 = vector.Vec3{X: viewport_width, Y: 0, Z: 0}
@@ -70,9 +71,9 @@ func (c *Camera) Initialize() {
 
 	// Calculate the location of the upper left pixel
 	var viewport_upper_left = vector.Vec3{
-		X: camera_center.X - viewport_u.X/2 - viewport_v.X/2,
-		Y: camera_center.Y - viewport_u.Y/2 - viewport_v.Y/2,
-		Z: camera_center.Z - viewport_u.Z/2 - viewport_v.Z/2 - focal_length,
+		X: c.Center.X - viewport_u.X/2 - viewport_v.X/2,
+		Y: c.Center.Y - viewport_u.Y/2 - viewport_v.Y/2,
+		Z: c.Center.Z - viewport_u.Z/2 - viewport_v.Z/2 - focal_length,
 	}
 
 	var pixel_delta_u_plus_v = vector.Add(c.PixelDeltaU, c.PixelDeltaV)
@@ -82,6 +83,28 @@ func (c *Camera) Initialize() {
 	)
 }
 
+func (c Camera) GetRay(i, j int) ray.Ray {
+    // Construct a camera Ray originating from the origin and 
+    // directed at randomly sampled point around the pixel location i, j
+    offset := c.SampleSquare()
+
+    pixel_delta_U_sample := vector.Scale(c.PixelDeltaU, float64(i) + offset.X)
+    pixel_delta_V_sample := vector.Scale(c.PixelDeltaV, float64(j) + offset.Y)
+    pixel_delta_UV_sample := vector.Add(pixel_delta_U_sample, pixel_delta_V_sample)
+    pixel_sample := vector.Add(c.Pixel00Loc, pixel_delta_UV_sample)
+
+    ray_origin := c.Center
+    ray_direction := vector.Subtract(pixel_sample, ray_origin)
+
+    return ray.Ray{Origin: ray_origin, Direction: ray_direction}
+}
+
+func (c Camera) SampleSquare() vector.Vec3 {
+    // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
+    return vector.Vec3{X: rtweekend.RandomDouble() - 0.5, Y: rtweekend.RandomDouble() - 0.5, Z: 0}
+}
+
+// Shader
 func (c Camera) RayColor(r ray.Ray, world hittable.Hittable) color.Color3 {
 	var rec hittable.HitRecord
 	if (world.Hit(r, interval.Interval{Min: 0, Max: rtweekend.INFINITY}, &rec)) {
