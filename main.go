@@ -2,37 +2,21 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 
 	"github.com/seaskythe/rayscape/color"
+	"github.com/seaskythe/rayscape/hittable"
 	"github.com/seaskythe/rayscape/ray"
 	"github.com/seaskythe/rayscape/vector"
 )
 
-func hit_sphere(center vector.Point3, radius float64, ray ray.Ray) float64 {
-	oc := vector.Subtract(center, ray.Origin)
-	a := vector.Dot(ray.Direction, ray.Direction)
-    b := -2.0 * vector.Dot(ray.Direction, oc)
-	c := vector.Dot(oc, oc) - radius*radius
-	discriminant := b*b - 4*a*c
 
-
-	if discriminant < 0 {
-		return -1.0
-	} else {
-        root := math.Sqrt(discriminant)
-		return ((-b - root) / (2 * a))
-	}
-}
-
-func ray_color(ray ray.Ray) color.Color3 {
-	t := hit_sphere(vector.Point3{X: 0, Y: 0, Z: -1}, 0.5, ray)
-	if t > 0 {
-		sub := vector.Subtract(ray.At(t), vector.Point3{X: 0, Y: 0, Z: -1})
-		N := vector.UnitVector(sub)
-		return vector.Scale(color.Color3{X: N.X + 1, Y: N.Y + 1, Z: N.Z + 1}, 0.5)
-	}
+func ray_color(ray ray.Ray, world hittable.Hittable) color.Color3 {
+    var rec hittable.HitRecord
+    if (world.Hit(ray, 0, infinity, &rec)){
+        fmt.Println(rec)
+        return vector.Scale(vector.Add(rec.Normal, color.Color3{X: 1, Y: 1, Z: 1}), 0.5)
+    }
 
 	unit_direction := vector.UnitVector(ray.Direction)
 	a := 0.5 * (unit_direction.Y + 1.0)
@@ -53,6 +37,11 @@ func main() {
 	if image_height < 1 {
 		image_height = 1
 	}
+
+    // World
+    var world hittable.HittableList
+    world.Add(hittable.Sphere{Center: vector.Point3{X: 0, Y: 0, Z: -1}, Radius: 0.5})
+    world.Add(hittable.Sphere{Center: vector.Point3{X: 0, Y: -100.5, Z: -1}, Radius: 100})
 
 	// Camera
 	var focal_length float64 = 1.0
@@ -85,7 +74,7 @@ func main() {
 	defer file.Close()
 
 	for j := 0; j < image_height; j++ {
-		fmt.Fprintf(os.Stderr, "Scanlines remaining: %d \n", image_height-j)
+		// fmt.Fprintf(os.Stderr, "\033[2K\rScanlines remaining: %d", image_height-j)
 		os.Stderr.Sync()
 		for i := 0; i < image_width; i++ {
 			pixel_delta_u_i := vector.Scale(pixel_delta_u, float64(i))
@@ -93,10 +82,11 @@ func main() {
 			pixel_deltas := vector.Add(pixel_delta_u_i, pixel_delta_v_j)
 			var pixel_center = vector.Add(pixel00_loc, pixel_deltas)
 			var ray_direction = vector.Subtract(pixel_center, camera_center)
+            var r ray.Ray = ray.Ray{Origin: camera_center, Direction: ray_direction}
 
-			var r ray.Ray = ray.Ray{Origin: camera_center, Direction: ray_direction}
-			pixel_color := ray_color(r)
+			pixel_color := ray_color(r, world)
 			color.WriteColor(file, pixel_color)
 		}
 	}
+    fmt.Fprintln(os.Stderr, "\nDone!")
 }
