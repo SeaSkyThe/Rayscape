@@ -16,7 +16,6 @@ To run and generate the image
 go run .
 ```
 
-## Last Chapter: 9
 
 ## My Development Notes
 
