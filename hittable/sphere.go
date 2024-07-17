@@ -14,23 +14,23 @@ type Sphere struct {
 }
 
 func (s Sphere) Hit(r ray.Ray, ray_t interval.Interval, rec *HitRecord) bool {
-	oc := vector.Subtract(s.Center, r.Origin)
+	oc := vector.Subtract(s.Center, r.Origin) // Vector from the ray origin to the sphere center
 	a := r.Direction.LengthSquared()
 	half_b := vector.Dot(r.Direction, oc)
 	c := oc.LengthSquared() - s.Radius*s.Radius
 
 	discriminant := half_b*half_b - a*c
 
-	if discriminant < 0 {
+	if discriminant < 0 { // No intersection
 		return false
 	}
 
 	sqrtd := math.Sqrt(discriminant)
 
 	// Find the nearest root that lies in the acceptable range
-	root := (half_b - sqrtd) / a
+	root := (half_b - sqrtd) / a  // Check if root is in the interval
 	if !ray_t.Surrounds(root) {
-		root = (half_b + sqrtd) / a
+		root = (half_b + sqrtd) / a // Check other root
 		if !ray_t.Surrounds(root) {
 			return false
 		}

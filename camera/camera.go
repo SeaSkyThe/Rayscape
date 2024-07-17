@@ -3,6 +3,7 @@ package camera
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/seaskythe/rayscape/color"
 	"github.com/seaskythe/rayscape/hittable"
@@ -22,9 +23,12 @@ type Camera struct {
 	PixelDeltaV       vector.Vec3
 	SamplesPerPixel   int
 	PixelSamplesScale float64
+	MaxDepth          int
 }
 
 func (c *Camera) Render(world hittable.Hittable) {
+    start_time := time.Now()
+    fmt.Fprintln(os.Stderr, "\nRender Started.")
 	c.Initialize()
 
 	file := CreatePPMImage(c.ImageWidth, c.ImageHeight)
@@ -34,16 +38,16 @@ func (c *Camera) Render(world hittable.Hittable) {
 		fmt.Fprintf(os.Stderr, "\033[2K\rScanlines remaining: %d", c.ImageHeight-j)
 		os.Stderr.Sync()
 		for i := 0; i < c.ImageWidth; i++ {
-            pixel_color := color.Color3{X: 0, Y: 0, Z: 0}
+			pixel_color := color.Color3{X: 0, Y: 0, Z: 0}
 
 			for sample := 0; sample < c.SamplesPerPixel; sample++ {
 				r := c.GetRay(i, j)
-				pixel_color = vector.Add(pixel_color, c.RayColor(r, world))
+				pixel_color = vector.Add(pixel_color, c.RayColor(r, c.MaxDepth, world))
 			}
 			color.WriteColor(file, vector.Scale(pixel_color, c.PixelSamplesScale))
 		}
 	}
-	fmt.Fprintln(os.Stderr, "\nDone!")
+	fmt.Fprintf(os.Stderr, "\nRender Finished in %f s!\n", time.Since(start_time).Seconds())
 
 }
 
@@ -84,31 +88,39 @@ func (c *Camera) Initialize() {
 }
 
 func (c Camera) GetRay(i, j int) ray.Ray {
-    // Construct a camera Ray originating from the origin and 
-    // directed at randomly sampled point around the pixel location i, j
-    offset := c.SampleSquare()
+	// Construct a camera Ray originating from the origin and
+	// directed at randomly sampled point around the pixel location i, j
+	offset := c.SampleSquare()
 
-    pixel_delta_U_sample := vector.Scale(c.PixelDeltaU, float64(i) + offset.X)
-    pixel_delta_V_sample := vector.Scale(c.PixelDeltaV, float64(j) + offset.Y)
-    pixel_delta_UV_sample := vector.Add(pixel_delta_U_sample, pixel_delta_V_sample)
-    pixel_sample := vector.Add(c.Pixel00Loc, pixel_delta_UV_sample)
+	pixel_delta_U_sample := vector.Scale(c.PixelDeltaU, float64(i)+offset.X)
+	pixel_delta_V_sample := vector.Scale(c.PixelDeltaV, float64(j)+offset.Y)
+	pixel_delta_UV_sample := vector.Add(pixel_delta_U_sample, pixel_delta_V_sample)
+	pixel_sample := vector.Add(c.Pixel00Loc, pixel_delta_UV_sample)
 
-    ray_origin := c.Center
-    ray_direction := vector.Subtract(pixel_sample, ray_origin)
+	ray_origin := c.Center
+	ray_direction := vector.Subtract(pixel_sample, ray_origin)
 
-    return ray.Ray{Origin: ray_origin, Direction: ray_direction}
+	return ray.Ray{Origin: ray_origin, Direction: ray_direction}
 }
 
 func (c Camera) SampleSquare() vector.Vec3 {
-    // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
-    return vector.Vec3{X: rtweekend.RandomDouble() - 0.5, Y: rtweekend.RandomDouble() - 0.5, Z: 0}
+	// Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
+	return vector.Vec3{X: rtweekend.RandomDouble() - 0.5, Y: rtweekend.RandomDouble() - 0.5, Z: 0}
 }
 
 // Shader
-func (c Camera) RayColor(r ray.Ray, world hittable.Hittable) color.Color3 {
+func (c Camera) RayColor(r ray.Ray, depth int, world hittable.Hittable) color.Color3 {
+	// If we exceed the ray bounce limit, no more light is processed
+	if depth <= 0 {
+		return color.Color3{X: 0, Y: 0, Z: 0}
+	}
+
 	var rec hittable.HitRecord
-	if (world.Hit(r, interval.Interval{Min: 0, Max: rtweekend.INFINITY}, &rec)) {
-		return vector.Scale(vector.Add(rec.Normal, color.Color3{X: 1, Y: 1, Z: 1}), 0.5)
+	if (world.Hit(r, interval.Interval{Min: 0.001, Max: rtweekend.INFINITY}, &rec)) {
+		// var direction vector.Vec3 = vector.RandomOnHemisphere(rec.Normal) // Reflect Rays Evenly
+        var direction = vector.Add(rec.Normal, vector.RandomUnitVector()) // Lambertian Reflection (reflect randomly towards normal)
+        reflectance := 0.2
+		return vector.Scale(c.RayColor(ray.Ray{Origin: rec.P, Direction: direction}, depth-1, world), reflectance)
 	}
 
 	unit_direction := vector.UnitVector(r.Direction)

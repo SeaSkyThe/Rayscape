@@ -16,7 +16,6 @@ To run and generate the image
 go run .
 ```
 
-
 ## My Development Notes
 
 This is a section that I generally use to register my notes, because I need to write to remember things, you don't need to read it.
@@ -111,8 +110,73 @@ Some constants were defined, and the main program was refactored, together with 
 
 An `Interval` type was defined to manage real-valued intervals with a minimum and a maximum, and it was applied in a lot of places.
 
-
 ### 7. Moving Camera Code Into Its Own Class
+
 The chapter title says it all. A lot of refactor.
 
 ### 8. Antialiasing
+
+If you play games you know what it its.
+
+Our images are right now (specially in the Sphere) with some "stair steps" at the borders of it, the so called "aliasing".
+
+Until now, we are using a single ray through the center of each pixel (point sampling), and the problem with that is our ray hits might not represent the plurality of the image,
+the book gives us a good example of it: "The problem with point sampling can be illustrated by rendering a small checkerboard far away. If this checkerboard consists of an 8×8 grid of black and white tiles, but only four rays hit it, then all four rays might intersect only white tiles, or only black, or some odd combination. In the real world, when we perceive a checkerboard far away with our eyes, we perceive it as a gray color, instead of sharp points of black and white. That's because our eyes are naturally doing what we want our ray tracer to do: integrate the (continuous function of) light falling on a particular (discrete) region of our rendered image."
+
+So, to solve that our color will be generated based on the pixel itself and on the light falling _around_ the pixel. We then implement the simplest model for that:
+sampling the square region centered at the pixel that extends halfway to each of the four neighboring pixels.
+
+To achieve that, we select samples from the area surrounding the pixel and average the resulting light (color) values together:
+
+- Define a number of random ray samples to use: $n$
+- For each ray sent, add the color in an accumulative color variable: $acc_color$
+- Get the average color: $acc_color/n$
+- Ensure that the color components (r, g, b) are in the bounds [0, 1]
+
+### 9. Diffuse Materials
+
+The called _matte_ materials:
+
+- They don't emit their own light
+- Light reflects in them with its direction randomized
+- They might also absorb the light (the darker the surface, the more likely the ray is absorbed)
+
+We first implement the easiest way of doing diffuse method, that is surfaces that randomly bounces a ray equally in all directions.
+To do that we create some functions to _Vec3_ type to generate random vectors.
+After that we create a _rejection method_, were we create a lot of random ray samples until we produce a sample that meets a desired criteria:
+
+1. Starting on the Ray hit point $P$, generate a random vector inside of a unit sphere (sphere with radius 1 and center in the point $P$)
+2. Normalize this vector
+3. Check if the vector falls on the correct hemisphere of the unit sphere (by comparing it with the surface normal)
+4. Invert the normalized vector if it falls onto the wrong hemisphere
+
+A good point to remember is that, those rays would bounce until it fails to hit anything.
+In simple scenes that is ok, but for complex ones, it's not. So we define a maximum depth for ray bounces.
+
+#### 9.3 Shadow Acne
+
+When a ray hits a surface, it calculates the intersection point with the surface.
+This calculation is susceptible to floating point rounding errors, which can cause the intersection point, for example, be bellow the surface
+causing the bounce ray to intersect with the surface again, causing _Shadow Acne_.
+To solve that, we just ignore hits that are very close to the calculated intersection point, setting our lower bound for the $t$ interval as $0.001$.
+
+#### 9.4 True Lambertian Reflection
+
+A better way to produce diffuse models. Instead of scattering reflected rays evenly.
+
+The definition presented by the book for Lambertian Distribution: "This distribution scatters reflected rays in a manner that is proportional to $cos(ϕ)$, where $ϕ$ is the angle between the reflected ray and the surface normal. This means that a reflected ray is most likely to scatter in a direction near the surface normal, and less likely to scatter in directions away from the normal. This non-uniform Lambertian distribution does a better job of modeling material reflection in the real world than our previous uniform scattering."
+
+To do that, we just add a random unit vector to the normal vector. Simple! 
+More in depth explanation about the geometry is in the book.
+
+After the changes we get a similar result, but with better shadows and the sky color is having more influence in the object colors.
+
+#### 9.5 Using Gamma Correction for Accurate Color Intensity
+
+Some cool things about reflectance and transformations applied by the computer before showing the image.
+
+Based on that we will store our images in the "gamma space" so we can accurately display the images in the way we want.
+
+To to that, we create a function to transform our image from linear space to gamma space (basically gets the color linear component square root).
+
+The effect of that is that we get a much more consistent ramp from darkness to lightness when adjusting reflectance.

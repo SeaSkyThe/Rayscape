@@ -3,6 +3,8 @@ package vector
 import (
 	"fmt"
 	"math"
+
+	"github.com/seaskythe/rayscape/rtweekend"
 )
 
 type Vec3 struct {
@@ -75,7 +77,46 @@ func UnitVector(v Vec3) Vec3 {
 	return Divide(v, length)
 }
 
+func Random() Vec3 {
+	return Vec3{
+		X: rtweekend.RandomDouble(),
+		Y: rtweekend.RandomDouble(),
+		Z: rtweekend.RandomDouble(),
+	}
+}
+
+func RandomInInterval(min, max float64) Vec3 {
+	return Vec3{
+		X: rtweekend.RandomDoubleInInterval(min, max),
+		Y: rtweekend.RandomDoubleInInterval(min, max),
+		Z: rtweekend.RandomDoubleInInterval(min, max),
+	}
+}
+
+func RandomInUnitSphere() Vec3 {
+	p := RandomInInterval(-1, 1)
+	for true {
+		p = RandomInInterval(-1, 1)
+		if p.LengthSquared() < 1 {
+			return p
+		}
+	}
+	return p
+}
+
+func RandomUnitVector() Vec3 {
+	return UnitVector(RandomInUnitSphere())
+}
+
+func RandomOnHemisphere(normal Vec3) Vec3 {
+	var on_unit_sphere = RandomUnitVector()
+	if Dot(on_unit_sphere, normal) > 0.0 { // In the same hemisphere of the normal (ray reflection correct)
+		return on_unit_sphere
+	} else {
+		return Scale(on_unit_sphere, -1)
+	}
+}
+
 func PrintVec3(v Vec3) {
 	fmt.Printf("%f %f %f\n", v.X, v.Y, v.Z)
 }
-
