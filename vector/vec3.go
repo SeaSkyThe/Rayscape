@@ -36,6 +36,11 @@ func (v Vec3) LengthSquared() float64 {
 	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
 }
 
+func (v Vec3) NearZero() bool {
+	s := 1e-8
+	return math.Abs(v.X) < s && math.Abs(v.Y) < s && math.Abs(v.Z) < s
+}
+
 // Vector Utility Functions
 func Add(u, v Vec3) Vec3 {
 	return Vec3{u.X + v.X, u.Y + v.Y, u.Z + v.Z}
@@ -115,6 +120,10 @@ func RandomOnHemisphere(normal Vec3) Vec3 {
 	} else {
 		return Scale(on_unit_sphere, -1)
 	}
+}
+
+func Reflect(v Vec3, normal Vec3) Vec3 {
+	return Subtract(v, Scale(normal, Dot(v, normal)*2))
 }
 
 func PrintVec3(v Vec3) {

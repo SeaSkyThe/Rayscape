@@ -180,3 +180,34 @@ Based on that we will store our images in the "gamma space" so we can accurately
 To to that, we create a function to transform our image from linear space to gamma space (basically gets the color linear component square root).
 
 The effect of that is that we get a much more consistent ramp from darkness to lightness when adjusting reflectance.
+
+
+### 10. Metal
+
+The first step is to generalize materials, now that we gonna have 2 types (Matte and Metal), so I built an interface *Material* that has a method called *Scatter*. The method *Scatter* defines how a Ray interacts with the material surface.
+
+**HitRecords**:
+- Register of hits, stores point of hit P, normal vector on hit surface, material type and everything we want.
+- The type definition had to be transfered from `hittable/hittable.go` to `material/material.go`, to avoid circular imports.
+
+Based on the new *Material* interface, we defined 2 types of material and the:
+- *Lambertian:* represents diffuse objects
+    - *Scatter:* It calculates a new direction for the scattered ray by adding randomness to the surface normal at the hit point. If the calculated direction is nearly zero, it defaults to the normal to ensure proper scattering. The method also sets the color attenuation to the material's albedo, indicating how much light is absorbed versus reflected
+- *Metal:* represents metalic objects
+    - *Scatter:* It calculates the reflection of the incoming ray off the surface based on the surface normal at the hit point. The method then creates a new scattered ray in the reflected direction, originating from the hit point. The color attenuation is set to the material's albedo, indicating how much light is absorbed versus reflected.
+
+At this point we can create a new scene with 2 metal spheres and one diffuse.
+
+#### 10.6. Fuzzy Reflection
+
+The reflection direction of the ray can be randomized by using a small sphere centered at the original endpoint. A new endpoint for the ray is chosen within this sphere's surface, scaled by a fuzz factor.
+
+So the bigger our fuzzy sphere is, the fuzzier the reflections will be. So, our "fuzziness parameter" will be the fuzzy sphere radius.
+
+The idea behind using it so the metals does not look like literal mirrors (reflection angle equals the incident angle).
+
+That looks pretty cool. I will put the explanation image of the book below.
+
+![Reflect Fuzzy](./readme_attachments/10_Reflect_Fuzzy.jpg)
+
+

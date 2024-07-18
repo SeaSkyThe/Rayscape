@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/seaskythe/rayscape/interval"
+	"github.com/seaskythe/rayscape/material"
 	"github.com/seaskythe/rayscape/ray"
 	"github.com/seaskythe/rayscape/vector"
 )
@@ -11,9 +12,10 @@ import (
 type Sphere struct {
 	Center vector.Point3
 	Radius float64
+    Mat material.Material
 }
 
-func (s Sphere) Hit(r ray.Ray, ray_t interval.Interval, rec *HitRecord) bool {
+func (s Sphere) Hit(r ray.Ray, ray_t interval.Interval, rec *material.HitRecord) bool {
 	oc := vector.Subtract(s.Center, r.Origin) // Vector from the ray origin to the sphere center
 	a := r.Direction.LengthSquared()
 	half_b := vector.Dot(r.Direction, oc)
@@ -42,6 +44,7 @@ func (s Sphere) Hit(r ray.Ray, ray_t interval.Interval, rec *HitRecord) bool {
 
 	var outward_normal vector.Vec3 = vector.Divide(vector.Subtract(rec.P, s.Center), s.Radius)
 	rec.SetFaceNormal(r, outward_normal)
+    rec.Mat = s.Mat
 
 	return true
 

@@ -8,6 +8,7 @@ import (
 	"github.com/seaskythe/rayscape/color"
 	"github.com/seaskythe/rayscape/hittable"
 	"github.com/seaskythe/rayscape/interval"
+	"github.com/seaskythe/rayscape/material"
 	"github.com/seaskythe/rayscape/ray"
 	"github.com/seaskythe/rayscape/rtweekend"
 	"github.com/seaskythe/rayscape/vector"
@@ -27,8 +28,8 @@ type Camera struct {
 }
 
 func (c *Camera) Render(world hittable.Hittable) {
-    start_time := time.Now()
-    fmt.Fprintln(os.Stderr, "\nRender Started.")
+	start_time := time.Now()
+	fmt.Fprintln(os.Stderr, "\nRender Started.")
 	c.Initialize()
 
 	file := CreatePPMImage(c.ImageWidth, c.ImageHeight)
@@ -44,6 +45,7 @@ func (c *Camera) Render(world hittable.Hittable) {
 				r := c.GetRay(i, j)
 				pixel_color = vector.Add(pixel_color, c.RayColor(r, c.MaxDepth, world))
 			}
+            // fmt.Println(pixel_color, vector.Scale(pixel_color, c.PixelSamplesScale))
 			color.WriteColor(file, vector.Scale(pixel_color, c.PixelSamplesScale))
 		}
 	}
@@ -114,15 +116,19 @@ func (c Camera) RayColor(r ray.Ray, depth int, world hittable.Hittable) color.Co
 	if depth <= 0 {
 		return color.Color3{X: 0, Y: 0, Z: 0}
 	}
-
-	var rec hittable.HitRecord
+	var rec material.HitRecord
 	if (world.Hit(r, interval.Interval{Min: 0.001, Max: rtweekend.INFINITY}, &rec)) {
-		// var direction vector.Vec3 = vector.RandomOnHemisphere(rec.Normal) // Reflect Rays Evenly
-        var direction = vector.Add(rec.Normal, vector.RandomUnitVector()) // Lambertian Reflection (reflect randomly towards normal)
-        reflectance := 0.2
-		return vector.Scale(c.RayColor(ray.Ray{Origin: rec.P, Direction: direction}, depth-1, world), reflectance)
+		var scattered ray.Ray
+		var attenuation color.Color3
+		if rec.Mat.Scatter(r, rec, &attenuation, &scattered) {
+            // fmt.Println("attenuation = ", attenuation, "nextColor = ", c.RayColor(scattered, depth - 1, world), "resultColor = ", vector.Multiply(attenuation, c.RayColor(scattered, depth-1, world)))
+			return vector.Multiply(attenuation, c.RayColor(scattered, depth-1, world))
+		}
+		return color.Color3{X: 0, Y: 0, Z: 0}
 	}
 
+    // If its not any object, just render a background
+    // fmt.Println("here")
 	unit_direction := vector.UnitVector(r.Direction)
 	a := 0.5 * (unit_direction.Y + 1.0)
 
