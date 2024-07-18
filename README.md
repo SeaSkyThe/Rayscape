@@ -166,7 +166,7 @@ A better way to produce diffuse models. Instead of scattering reflected rays eve
 
 The definition presented by the book for Lambertian Distribution: "This distribution scatters reflected rays in a manner that is proportional to $cos(ϕ)$, where $ϕ$ is the angle between the reflected ray and the surface normal. This means that a reflected ray is most likely to scatter in a direction near the surface normal, and less likely to scatter in directions away from the normal. This non-uniform Lambertian distribution does a better job of modeling material reflection in the real world than our previous uniform scattering."
 
-To do that, we just add a random unit vector to the normal vector. Simple! 
+To do that, we just add a random unit vector to the normal vector. Simple!
 More in depth explanation about the geometry is in the book.
 
 After the changes we get a similar result, but with better shadows and the sky color is having more influence in the object colors.
@@ -181,20 +181,21 @@ To to that, we create a function to transform our image from linear space to gam
 
 The effect of that is that we get a much more consistent ramp from darkness to lightness when adjusting reflectance.
 
-
 ### 10. Metal
 
-The first step is to generalize materials, now that we gonna have 2 types (Matte and Metal), so I built an interface *Material* that has a method called *Scatter*. The method *Scatter* defines how a Ray interacts with the material surface.
+The first step is to generalize materials, now that we gonna have 2 types (Matte and Metal), so I built an interface _Material_ that has a method called _Scatter_. The method _Scatter_ defines how a Ray interacts with the material surface.
 
 **HitRecords**:
+
 - Register of hits, stores point of hit P, normal vector on hit surface, material type and everything we want.
 - The type definition had to be transfered from `hittable/hittable.go` to `material/material.go`, to avoid circular imports.
 
-Based on the new *Material* interface, we defined 2 types of material and the:
-- *Lambertian:* represents diffuse objects
-    - *Scatter:* It calculates a new direction for the scattered ray by adding randomness to the surface normal at the hit point. If the calculated direction is nearly zero, it defaults to the normal to ensure proper scattering. The method also sets the color attenuation to the material's albedo, indicating how much light is absorbed versus reflected
-- *Metal:* represents metalic objects
-    - *Scatter:* It calculates the reflection of the incoming ray off the surface based on the surface normal at the hit point. The method then creates a new scattered ray in the reflected direction, originating from the hit point. The color attenuation is set to the material's albedo, indicating how much light is absorbed versus reflected.
+Based on the new _Material_ interface, we defined 2 types of material and the:
+
+- _Lambertian:_ represents diffuse objects
+  - _Scatter:_ It calculates a new direction for the scattered ray by adding randomness to the surface normal at the hit point. If the calculated direction is nearly zero, it defaults to the normal to ensure proper scattering. The method also sets the color attenuation to the material's albedo, indicating how much light is absorbed versus reflected
+- _Metal:_ represents metalic objects
+  - _Scatter:_ It calculates the reflection of the incoming ray off the surface based on the surface normal at the hit point. The method then creates a new scattered ray in the reflected direction, originating from the hit point. The color attenuation is set to the material's albedo, indicating how much light is absorbed versus reflected.
 
 At this point we can create a new scene with 2 metal spheres and one diffuse.
 
@@ -210,4 +211,34 @@ That looks pretty cool. I will put the explanation image of the book below.
 
 ![Reflect Fuzzy](./readme_attachments/10_Reflect_Fuzzy.jpg)
 
+### 11. Dieletrics
+
+Dieletrics are materials that are transparent, and they are used to model things like glass, water, and ice.
+
+When a ray hits a dieletric, it splits into a reflected ray and a refracted (transmitted) ray.
+
+First the book handles it by randomly choosing between reflection and refraction.
+
+The book gives a quick review of terms:
+
+- A **reflect** ray hits a surface at an angle $\theta$ and is reflected at an angle $\phi$ (the angle between the incident ray and the surface normal)
+- A **refracted** ray bends as it transitions from one medium to another, and is refracted at an angle $\theta$ and is refracted at an angle $\phi$ (the angle between the incident ray and the surface normal). This is why a pencil looks bent when partially under water.
+  - The amount a ray is refracted depends on the refractive indices of the two media (materials). This is basically a single value that describes how much light bends when entering a material from vacuum.
+  - When a transparent material is embedded in a different transparent material, you can describe the refraction with a relative index of refraction dividing the refractive index of the object's material divided by the refractive index of the surrounding material. For example, to render a glass ball under water, divide the refractive index of the ball by the refractive index of the water.
+
+The refraction is defined by Snell's Law:
+
+$$n_1 \sin(\theta_1) = n_2 \sin(\theta_2)$$
+
+Where $n_1$ and $n_2$ are the refractive indices of the two media, and $\theta_1$ and $\theta_2$ are the angles of incidence and refraction, respectively. 
+
+Then some math is made in the book, and it shows the end equation using rays, and using that we write the refraction function for the *Vec3* type, and changed our reflection function.
+
+After that we created the *Dieletric* type with total refraction.
+
+The book states that one troublesome practical issue is that there are ray angles for which no solutions exists using Snell's Law. And in those cases the material should reflect instead of refracting.
+
+Then some text about Shilick Approximation.
+
+### 12. Positionable Camera
 

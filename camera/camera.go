@@ -14,6 +14,8 @@ import (
 	"github.com/seaskythe/rayscape/vector"
 )
 
+var ray_bounces_count int = 0
+
 type Camera struct {
 	AspectRatio       float64
 	ImageWidth        int
@@ -49,8 +51,7 @@ func (c *Camera) Render(world hittable.Hittable) {
 			color.WriteColor(file, vector.Scale(pixel_color, c.PixelSamplesScale))
 		}
 	}
-	fmt.Fprintf(os.Stderr, "\nRender Finished in %f s!\n", time.Since(start_time).Seconds())
-
+    fmt.Fprintf(os.Stderr, "\nRender Finished in %fs | Ray Bounces: %d\n", time.Since(start_time).Seconds(), ray_bounces_count)
 }
 
 func (c *Camera) Initialize() {
@@ -112,6 +113,7 @@ func (c Camera) SampleSquare() vector.Vec3 {
 
 // Shader
 func (c Camera) RayColor(r ray.Ray, depth int, world hittable.Hittable) color.Color3 {
+    ray_bounces_count += 1
 	// If we exceed the ray bounce limit, no more light is processed
 	if depth <= 0 {
 		return color.Color3{X: 0, Y: 0, Z: 0}

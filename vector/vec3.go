@@ -126,6 +126,20 @@ func Reflect(v Vec3, normal Vec3) Vec3 {
 	return Subtract(v, Scale(normal, Dot(v, normal)*2))
 }
 
+func Refract(uv Vec3, n Vec3, etai_over_etat float64) Vec3 {
+	// etai is relative index of refraction through air (1.0 for air)
+	// etat is relative index of refraction through the material (1.0 for vacuum)
+	cos_theta := min(Dot(uv.Negate(), n), 1.0)
+	// Refracted ray is composed by 2 parts:
+	// - a ray perpendicular to the surface normal
+	// - a ray parallel to the surface normal
+
+	var r_out_perp Vec3 = Scale(Add(uv, Scale(n, cos_theta)), etai_over_etat) // perpendicular to the surface
+	var r_out_parallel Vec3 = Scale(n, -math.Sqrt(math.Abs(1-r_out_perp.LengthSquared()))) // parallel to the surface
+
+	return Add(r_out_perp, r_out_parallel)
+}
+
 func PrintVec3(v Vec3) {
 	fmt.Printf("%f %f %f\n", v.X, v.Y, v.Z)
 }
