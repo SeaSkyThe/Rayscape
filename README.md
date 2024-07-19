@@ -1,12 +1,47 @@
 # Rayscape
 
+![Final Result](./final_image.png)
+
+## Content Table
+<!--toc:start-->
+- [Rayscape](#rayscape)
+  - [Idea](#idea)
+  - [Motivation](#motivation)
+  - [Run](#run)
+  - [Benchmarks](#benchmarks)
+  - [My Development Notes](#my-development-notes)
+    - [1. Overview](#1-overview)
+    - [2. Output an Image](#2-output-an-image)
+    - [3. The Vec3 Class](#3-the-vec3-class)
+    - [4. Rays, a Simple Camera, and Background](#4-rays-a-simple-camera-and-background)
+      - [Ray](#ray)
+      - [Camera, Viewport and sending Rays](#camera-viewport-and-sending-rays)
+    - [5. Adding a Sphere](#5-adding-a-sphere)
+    - [6. Surface Normals and Multiple Objects](#6-surface-normals-and-multiple-objects)
+      - [Generalization of hittable objects](#generalization-of-hittable-objects)
+    - [7. Moving Camera Code Into Its Own Class](#7-moving-camera-code-into-its-own-class)
+    - [8. Antialiasing](#8-antialiasing)
+    - [9. Diffuse Materials](#9-diffuse-materials)
+      - [9.3 Shadow Acne](#93-shadow-acne)
+      - [9.4 True Lambertian Reflection](#94-true-lambertian-reflection)
+      - [9.5 Using Gamma Correction for Accurate Color Intensity](#95-using-gamma-correction-for-accurate-color-intensity)
+    - [10. Metal](#10-metal)
+      - [10.6. Fuzzy Reflection](#106-fuzzy-reflection)
+    - [11. Dieletrics](#11-dieletrics)
+    - [12. Positionable Camera](#12-positionable-camera)
+      - [12.1. Camera Viewing Geometry](#121-camera-viewing-geometry)
+      - [12.2. Positioning and Orienting the Camera](#122-positioning-and-orienting-the-camera)
+    - [13. Defocus Blur](#13-defocus-blur)
+    - [14. Where Next?](#14-where-next)
+<!--toc:end-->
+
 ## Idea
 
 A Ray Tracing implementation in Go based on the amazing book: [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html)
 
 ## Motivation
 
-The motivation behind this project is to learn more about Go types and references, and have some fun with images.
+The motivation behind this project is to learn more about Go types and references, and have some fun with Ray Tracing .
 
 ## Run
 
@@ -16,6 +51,13 @@ To run and generate the image
 go run .
 ```
 
+## Benchmarks
+
+Time to render the first time:
+- 6904.111147s -> 1 Hour 55 Minutes 4.1111 Seconds
+
+Time to render rendering 10 lines at a time (10 goroutines), and almost killing my CPU: 
+- 1068.692736s -> 17 Minutes 48.6927 Seconds
 ## My Development Notes
 
 This is a section that I generally use to register my notes, because I need to write to remember things, you don't need to read it.
@@ -257,3 +299,19 @@ First some nomenclatures (review the book for more details and images):
 - The position where we want to look at: *lookat*
 - The sideways tilt of the camera (as if you look to some place, and tilt your head around your nose): *vup*
 - The camera frame basis vectors: $u$, $v$, $w$
+
+### 13. Defocus Blur
+
+The defocus blur is a type of blur that occurs when the camera is focused on a specific point in space (depth of field).
+
+Focus distance is the distance from the camera to the point of focus. Objects placed at that distance will appear sharper and will linearly appear blurrier the further they are from that distance.
+
+Holy, there is a lot of theory details about cameras in this chapter, cool.
+
+
+### 14. Where Next?
+
+Mounting the final scene.
+
+The book is amazing, there is 2 more books to go from here, probably I will follow them in the future.
+

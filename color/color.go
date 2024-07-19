@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"github.com/seaskythe/rayscape/interval"
+	"github.com/seaskythe/rayscape/rtweekend"
 	"github.com/seaskythe/rayscape/vector"
 )
 
@@ -41,4 +42,7 @@ func WriteColor(out io.Writer, pixel_color Color3) {
 	if err != nil {
 		panic(err)
 	}
+}
+func Random(min, max float64) Color3 {
+    return Color3{X: rtweekend.RandomDoubleInInterval(min, max), Y: rtweekend.RandomDoubleInInterval(min, max), Z: rtweekend.RandomDoubleInInterval(min, max)}
 }

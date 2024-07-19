@@ -90,6 +90,17 @@ func Random() Vec3 {
 	}
 }
 
+func RandomInUnitDisk() Vec3 {
+    var p Vec3
+    for true{
+        p = Vec3{rtweekend.RandomDoubleInInterval(-1, 1), rtweekend.RandomDoubleInInterval(-1, 1), 0}
+        if p.LengthSquared() < 1 {
+            return p
+        }
+    }
+    return p
+}
+
 func RandomInInterval(min, max float64) Vec3 {
 	return Vec3{
 		X: rtweekend.RandomDoubleInInterval(min, max),
