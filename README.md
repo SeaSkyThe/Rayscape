@@ -242,3 +242,18 @@ Then some text about Shilick Approximation.
 
 ### 12. Positionable Camera
 
+Time to personalize our camera.
+
+#### 12.1. Camera Viewing Geometry
+Vertical Field of View (Vertical FOV or VFOV) refers to the angle of the visible area in a vertical direction through a camera lens or in a computer graphics perspective. It determines how much of the scene is visible vertically.
+
+- Set adjustable field of view (vfov) -> $\theta$
+- Viewport height -> $h = tan(\frac{\theta}{2})$
+
+#### 12.2. Positioning and Orienting the Camera
+
+First some nomenclatures (review the book for more details and images):
+- The position where we place the camera: *lookfrom*
+- The position where we want to look at: *lookat*
+- The sideways tilt of the camera (as if you look to some place, and tilt your head around your nose): *vup*
+- The camera frame basis vectors: $u$, $v$, $w$
